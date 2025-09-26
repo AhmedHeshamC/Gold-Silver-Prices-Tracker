@@ -255,8 +255,22 @@ class PriceTracker:
         self.converter = converter
         self.logger = logger
 
+    def prompt_save(self) -> bool:
+        """Prompt the user to save the fetched prices."""
+        while True:
+            choice = (
+                input("Would you like to save these prices? (y/n): ").strip().lower()
+            )
+            if choice == "y":
+                return True
+            elif choice == "n":
+                print("Prices not saved. Have a great day!")
+                return False
+            else:
+                print("Please enter 'y' or 'n'.")
+
     def run(self, quiet: bool = False) -> None:
-        """Execute the full workflow: fetch, convert, log."""
+        """Execute the full workflow: fetch, convert, log, and prompt to save."""
         try:
             # Fetch
             gold_usd_oz = self.metal_fetcher.fetch_gold()
@@ -273,9 +287,9 @@ class PriceTracker:
             gold_egp_g = self.converter.to_egp(gold_usd_g, rate)
             silver_egp_g = self.converter.to_egp(silver_usd_g, rate)
 
-            # Log
+            # Display/log to console and log file (but not CSV yet)
             timestamp = datetime.now(timezone.utc).isoformat()
-            self.logger.log(
+            self.logger._append_to_log(
                 timestamp,
                 gold_usd_oz,
                 silver_usd_oz,
@@ -287,6 +301,38 @@ class PriceTracker:
                 silver_egp_g,
                 quiet,
             )
+
+            # Prompt to save if not quiet (interactive mode)
+            if not quiet:
+                if self.prompt_save():
+                    self.logger._append_to_csv(
+                        timestamp,
+                        gold_usd_oz,
+                        silver_usd_oz,
+                        gold_egp_oz,
+                        silver_egp_oz,
+                        gold_usd_g,
+                        silver_usd_g,
+                        gold_egp_g,
+                        silver_egp_g,
+                    )
+                    print("Prices saved to prices_log.csv and prices.log.")
+                else:
+                    # Already greeted in prompt_save
+                    return
+            else:
+                # In quiet mode, always save both CSV and log
+                self.logger._append_to_csv(
+                    timestamp,
+                    gold_usd_oz,
+                    silver_usd_oz,
+                    gold_egp_oz,
+                    silver_egp_oz,
+                    gold_usd_g,
+                    silver_usd_g,
+                    gold_egp_g,
+                    silver_egp_g,
+                )
 
         except ApiError as e:
             self._handle_error(e, quiet)
@@ -329,7 +375,8 @@ def main():
     if args.test:
         # Test: Mock data (no APIs) - ounce first, then gram
         timestamp = datetime.now(timezone.utc).isoformat()
-        tracker.logger.log(
+        # Always display and prompt to save in test mode unless --quiet
+        tracker.logger._append_to_log(
             timestamp,
             2000.00,
             25.00,
@@ -342,7 +389,46 @@ def main():
             args.quiet,
         )
         if not args.quiet:
+            # Prompt to save
+            while True:
+                choice = (
+                    input("Would you like to save these prices? (y/n): ")
+                    .strip()
+                    .lower()
+                )
+                if choice == "y":
+                    tracker.logger._append_to_csv(
+                        timestamp,
+                        2000.00,
+                        25.00,
+                        96260.00,
+                        1203.25,
+                        64.28,
+                        0.80,
+                        3092.50,
+                        38.50,
+                    )
+                    print("Prices saved to prices_log.csv and prices.log.")
+                    break
+                elif choice == "n":
+                    print("Prices not saved. Have a great day!")
+                    break
+                else:
+                    print("Please enter 'y' or 'n'.")
             print("Test log completed. Check prices_log.csv and prices.log")
+        else:
+            # In quiet mode, always save
+            tracker.logger._append_to_csv(
+                timestamp,
+                2000.00,
+                25.00,
+                96260.00,
+                1203.25,
+                64.28,
+                0.80,
+                3092.50,
+                38.50,
+            )
     else:
         tracker.run(args.quiet)
 

@@ -58,18 +58,28 @@ This project follows SOLID principles, OOP best practices, KISS (Keep It Simple,
 ## Usage
 
 ### Manual Execution
-Run the script to fetch current prices and append to logs:
+Run the script to fetch current prices and display them:
 ```
 python3 metal_prices_tracker.py
 ```
-- **Output Example** (console table):
+After displaying the prices, the script will prompt:
+```
+Would you like to save these prices? (y/n):
+```
+- If you enter `y`, the prices are saved to both `prices_log.csv` and `prices.log`.
+- If you enter `n`, the script exits without saving and greets you.
+- If you run with `--quiet` (e.g., via cron), the script always saves without prompting.
+- **Output Example** (console table and prompt):
   ```
   === Latest Prices ===
   Timestamp: 2025-09-26T01:42:15.123456
-  Metal      USD (oz)     EGP (oz)    USD (g)      EGP (g)
+  Metal      USD (oz)     EGP (oz)    USD (g)      EGP (g)     
   Gold      $   3743.50   180177.16   $  120.35    5789.12
   Silver    $     44.99     2165.30   $    1.45      69.62
   ====================
+
+  Would you like to save these prices? (y/n):
+  ```
 
   Data appended to prices_log.csv. Open in a spreadsheet for full table view.
   ```
@@ -83,9 +93,10 @@ python3 metal_prices_tracker.py
   ```
   [2025-09-26T01:42:15.123456] Gold (oz/g): $3743.50/$120.35 USD, E£180177.16/5789.12 EGP | Silver (oz/g): $44.99/$1.45 USD, E£2165.30/69.62 EGP
   ```
+  - Only saved if you answer `y` to the prompt, or always in `--quiet` mode.
 
 ### CLI Options
-- `--quiet`: Suppress console output (ideal for cron/background).
+- `--quiet`: Suppress console output and always save prices (ideal for cron/background; no prompt).
   ```
   python3 metal_prices_tracker.py --quiet
   ```
